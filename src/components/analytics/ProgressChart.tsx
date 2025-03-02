@@ -18,16 +18,28 @@ const data = [
 
 type ChartType = "activity" | "calories" | "duration";
 
+const getWeekData = (week: string) => {
+  // In a real app, this would fetch different data for different weeks
+  // For now, we'll just return the same data
+  return data;
+};
+
 const ProgressChart = () => {
   const [chartType, setChartType] = useState<ChartType>("activity");
   const [currentWeek, setCurrentWeek] = useState("This Week");
+  const [currentData, setCurrentData] = useState(data);
+
+  const handleWeekChange = (week: string) => {
+    setCurrentWeek(week);
+    setCurrentData(getWeekData(week));
+  };
 
   const renderChart = () => {
     switch (chartType) {
       case "activity":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <AreaChart data={currentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorWorkout" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
@@ -58,7 +70,7 @@ const ProgressChart = () => {
       case "calories":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <BarChart data={currentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorCalories" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8} />
@@ -88,7 +100,7 @@ const ProgressChart = () => {
       case "duration":
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <LineChart data={currentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <XAxis dataKey="day" axisLine={false} tickLine={false} />
               <YAxis axisLine={false} tickLine={false} />
               <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.2} />
@@ -124,7 +136,7 @@ const ProgressChart = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setCurrentWeek("Last Week")}
+            onClick={() => handleWeekChange("Last Week")}
             aria-label="Previous week"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -136,7 +148,7 @@ const ProgressChart = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setCurrentWeek("Next Week")}
+            onClick={() => handleWeekChange("Next Week")}
             aria-label="Next week"
           >
             <ArrowRight className="h-4 w-4" />
@@ -144,7 +156,7 @@ const ProgressChart = () => {
         </div>
       </div>
 
-      <div className="flex space-x-2 mb-6">
+      <div className="flex space-x-2 mb-6 overflow-x-auto pb-1">
         <Button
           onClick={() => setChartType("activity")}
           variant={chartType === "activity" ? "default" : "outline"}
