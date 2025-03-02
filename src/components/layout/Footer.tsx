@@ -1,7 +1,6 @@
-
 import React from "react";
 import { cn } from "@/lib/utils";
-import { Heart, GitHub, Mail, Twitter } from "lucide-react";
+import { Github, Heart, Mail, Twitter } from "lucide-react";
 
 interface FooterProps {
   className?: string;
@@ -65,7 +64,7 @@ const Footer = ({ className }: FooterProps) => {
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="GitHub"
               >
-                <GitHub className="h-5 w-5" />
+                <Github className="h-5 w-5" />
               </a>
               <a 
                 href="#" 
