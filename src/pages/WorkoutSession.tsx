@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import PoseDetection from "@/components/workout/PoseDetection";
@@ -7,8 +6,100 @@ import WorkoutRecommendations from "@/components/workout/WorkoutRecommendations"
 import BlurredCard from "@/components/ui/BlurredCard";
 import { Button } from "@/components/ui/button";
 import { Check, Clock, Dumbbell, User, Heart, HeartPulse, Volume2, List, MoreHorizontal } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface WorkoutMetrics {
+  duration: number;
+  caloriesBurned: number;
+  heartRate: number;
+  exercisesCompleted: number;
+  totalExercises: number;
+}
 
 const WorkoutSession = () => {
+  const { toast } = useToast();
+  const [metrics, setMetrics] = useState<WorkoutMetrics>({
+    duration: 0,
+    caloriesBurned: 0,
+    heartRate: 0,
+    exercisesCompleted: 0,
+    totalExercises: 12
+  });
+  
+  const [isWorkoutActive, setIsWorkoutActive] = useState(true);
+  const [currentSet, setCurrentSet] = useState(3);
+  const [currentSetProgress, setCurrentSetProgress] = useState(45);
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  useEffect(() => {
+    if (!isWorkoutActive) return;
+    
+    const interval = setInterval(() => {
+      setMetrics(prev => {
+        const newDuration = prev.duration + 1;
+        const newCalories = Math.floor(newDuration * 0.15);
+        const newHeartRate = 120 + Math.floor(Math.sin(newDuration * 0.05) * 10) + Math.floor(Math.random() * 10);
+        const newSetProgress = (currentSetProgress + 1) % 100;
+        
+        if (newSetProgress === 0) {
+          toast({
+            title: "Set completed!",
+            description: `You've completed set ${currentSet} of your current exercise.`,
+          });
+          
+          if (currentSet === 3) {
+            return {
+              ...prev,
+              duration: newDuration,
+              caloriesBurned: newCalories,
+              heartRate: newHeartRate,
+              exercisesCompleted: Math.min(prev.exercisesCompleted + 1, prev.totalExercises)
+            };
+          }
+          
+          setCurrentSet(prev => prev < 3 ? prev + 1 : 1);
+        }
+        
+        setCurrentSetProgress(newSetProgress);
+        
+        return {
+          ...prev,
+          duration: newDuration,
+          caloriesBurned: newCalories,
+          heartRate: newHeartRate
+        };
+      });
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [isWorkoutActive, currentSet, currentSetProgress, toast]);
+
+  const handleEndWorkout = () => {
+    setIsWorkoutActive(false);
+    toast({
+      title: "Workout completed!",
+      description: `You burned ${metrics.caloriesBurned} calories in ${formatDuration(metrics.duration)}.`,
+    });
+  };
+
+  const handleCompleteExercise = () => {
+    setCurrentSet(1);
+    setCurrentSetProgress(0);
+    setMetrics(prev => ({
+      ...prev,
+      exercisesCompleted: Math.min(prev.exercisesCompleted + 1, prev.totalExercises)
+    }));
+    toast({
+      title: "Exercise completed!",
+      description: "Great job! Moving to the next exercise.",
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -16,7 +107,6 @@ const WorkoutSession = () => {
       <main className="flex-1 pt-24 pb-16">
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Main content */}
             <div className="lg:w-2/3">
               <div className="mb-8">
                 <h1 className="text-3xl font-bold mb-2">Workout Session</h1>
@@ -30,7 +120,7 @@ const WorkoutSession = () => {
                   <div className="bg-primary/10 p-3 rounded-full mb-1">
                     <Clock className="h-6 w-6 text-primary" />
                   </div>
-                  <div className="text-3xl font-semibold">12:45</div>
+                  <div className="text-3xl font-semibold">{formatDuration(metrics.duration)}</div>
                   <div className="text-sm text-muted-foreground">Duration</div>
                 </BlurredCard>
                 
@@ -38,7 +128,7 @@ const WorkoutSession = () => {
                   <div className="bg-green-500/10 p-3 rounded-full mb-1">
                     <Dumbbell className="h-6 w-6 text-green-500" />
                   </div>
-                  <div className="text-3xl font-semibold">347</div>
+                  <div className="text-3xl font-semibold">{metrics.caloriesBurned}</div>
                   <div className="text-sm text-muted-foreground">Calories Burned</div>
                 </BlurredCard>
                 
@@ -46,12 +136,11 @@ const WorkoutSession = () => {
                   <div className="bg-red-500/10 p-3 rounded-full mb-1">
                     <HeartPulse className="h-6 w-6 text-red-500" />
                   </div>
-                  <div className="text-3xl font-semibold">128</div>
+                  <div className="text-3xl font-semibold">{metrics.heartRate}</div>
                   <div className="text-sm text-muted-foreground">Avg. Heart Rate</div>
                 </BlurredCard>
               </div>
               
-              {/* Exercise progress */}
               <BlurredCard className="mb-8">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-semibold">Current Exercise</h3>
@@ -77,7 +166,7 @@ const WorkoutSession = () => {
                     <Button size="sm" variant="outline" className="gap-1">
                       <Volume2 className="h-4 w-4" /> Guide
                     </Button>
-                    <Button size="sm" className="gap-1">
+                    <Button size="sm" className="gap-1" onClick={handleCompleteExercise}>
                       <Check className="h-4 w-4" /> Complete
                     </Button>
                   </div>
@@ -114,13 +203,12 @@ const WorkoutSession = () => {
                       <span className="text-muted-foreground">In Progress</span>
                     </div>
                     <div className="w-full h-2 bg-secondary rounded-full">
-                      <div className="h-full bg-primary rounded-full" style={{ width: "45%" }}></div>
+                      <div className="h-full bg-primary rounded-full" style={{ width: `${currentSetProgress}%` }}></div>
                     </div>
                   </div>
                 </div>
               </BlurredCard>
               
-              {/* AI Feedback */}
               <BlurredCard>
                 <h3 className="text-xl font-semibold mb-4">AI Form Feedback</h3>
                 
@@ -158,7 +246,6 @@ const WorkoutSession = () => {
               </BlurredCard>
             </div>
             
-            {/* Sidebar */}
             <div className="lg:w-1/3 space-y-8">
               <BlurredCard>
                 <div className="flex items-center mb-6">
@@ -185,29 +272,31 @@ const WorkoutSession = () => {
                       <span className="font-medium">45 min workout</span>
                     </div>
                     <div className="w-full h-2 bg-secondary rounded-full">
-                      <div className="h-full bg-primary rounded-full" style={{ width: "65%" }}></div>
+                      <div className="h-full bg-primary rounded-full" 
+                           style={{ width: `${Math.min((metrics.duration / (45 * 60)) * 100, 100)}%` }}></div>
                     </div>
                   </div>
                   
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-muted-foreground">Weekly Progress</span>
-                      <span className="font-medium">4/6 workouts</span>
+                      <span className="font-medium">{metrics.exercisesCompleted}/6 workouts</span>
                     </div>
                     <div className="w-full h-2 bg-secondary rounded-full">
-                      <div className="h-full bg-primary rounded-full" style={{ width: "67%" }}></div>
+                      <div className="h-full bg-primary rounded-full" 
+                           style={{ width: `${(metrics.exercisesCompleted / 6) * 100}%` }}></div>
                     </div>
                   </div>
                   
                   <div className="pt-4 grid grid-cols-2 gap-4">
                     <div className="text-center p-3 bg-secondary/50 rounded-lg">
                       <p className="text-sm text-muted-foreground">Workouts</p>
-                      <p className="text-xl font-semibold">24</p>
+                      <p className="text-xl font-semibold">{metrics.exercisesCompleted}</p>
                       <p className="text-xs text-green-500">↑ 12%</p>
                     </div>
                     <div className="text-center p-3 bg-secondary/50 rounded-lg">
                       <p className="text-sm text-muted-foreground">Calories</p>
-                      <p className="text-xl font-semibold">6,240</p>
+                      <p className="text-xl font-semibold">{metrics.caloriesBurned}</p>
                       <p className="text-xs text-green-500">↑ 8%</p>
                     </div>
                   </div>
@@ -225,29 +314,29 @@ const WorkoutSession = () => {
                       </div>
                       <div>
                         <h4 className="font-medium">Full Body Power</h4>
-                        <p className="text-sm text-muted-foreground">12 exercises</p>
+                        <p className="text-sm text-muted-foreground">{metrics.totalExercises} exercises</p>
                       </div>
                     </div>
-                    <div className="text-sm">65%</div>
+                    <div className="text-sm">{Math.round((metrics.exercisesCompleted / metrics.totalExercises) * 100)}%</div>
                   </div>
                   
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Start time</span>
-                      <span>10:30 AM</span>
+                      <span>{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Elapsed time</span>
-                      <span>12:45</span>
+                      <span>{formatDuration(metrics.duration)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Exercises completed</span>
-                      <span>8/12</span>
+                      <span>{metrics.exercisesCompleted}/{metrics.totalExercises}</span>
                     </div>
                   </div>
                   
                   <div className="pt-2">
-                    <Button className="w-full">End Workout</Button>
+                    <Button className="w-full" onClick={handleEndWorkout}>End Workout</Button>
                   </div>
                 </div>
               </BlurredCard>
