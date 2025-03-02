@@ -1,4 +1,3 @@
-
 import React from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -17,8 +16,22 @@ import {
   Flame,
   Zap
 } from "lucide-react";
+import { useWorkout } from "@/context/WorkoutContext";
 
 const Progress = () => {
+  const { sessions, getTotalStats } = useWorkout();
+  const stats = getTotalStats();
+  
+  const formatTotalTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  };
+  
+  const recentSessions = [...sessions]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -35,7 +48,7 @@ const Progress = () => {
               <div className="bg-primary/10 p-3 rounded-full mb-3">
                 <Calendar className="h-6 w-6 text-primary" />
               </div>
-              <div className="text-3xl font-semibold">24</div>
+              <div className="text-3xl font-semibold">{stats.totalWorkouts}</div>
               <div className="text-sm text-muted-foreground">Workouts Completed</div>
               <div className="text-xs text-green-500 mt-1">↑ 12% from last month</div>
             </BlurredCard>
@@ -44,7 +57,7 @@ const Progress = () => {
               <div className="bg-green-500/10 p-3 rounded-full mb-3">
                 <Clock className="h-6 w-6 text-green-500" />
               </div>
-              <div className="text-3xl font-semibold">18h 45m</div>
+              <div className="text-3xl font-semibold">{formatTotalTime(stats.totalDuration)}</div>
               <div className="text-sm text-muted-foreground">Total Workout Time</div>
               <div className="text-xs text-green-500 mt-1">↑ 8% from last month</div>
             </BlurredCard>
@@ -53,7 +66,7 @@ const Progress = () => {
               <div className="bg-purple-500/10 p-3 rounded-full mb-3">
                 <Flame className="h-6 w-6 text-purple-500" />
               </div>
-              <div className="text-3xl font-semibold">15,420</div>
+              <div className="text-3xl font-semibold">{stats.totalCalories.toLocaleString()}</div>
               <div className="text-sm text-muted-foreground">Calories Burned</div>
               <div className="text-xs text-green-500 mt-1">↑ 15% from last month</div>
             </BlurredCard>
@@ -62,7 +75,7 @@ const Progress = () => {
               <div className="bg-amber-500/10 p-3 rounded-full mb-3">
                 <Award className="h-6 w-6 text-amber-500" />
               </div>
-              <div className="text-3xl font-semibold">8</div>
+              <div className="text-3xl font-semibold">{Math.min(8, Math.floor(stats.totalWorkouts / 3))}</div>
               <div className="text-sm text-muted-foreground">Achievements Earned</div>
               <div className="text-xs text-green-500 mt-1">↑ 2 new this month</div>
             </BlurredCard>
@@ -206,63 +219,44 @@ const Progress = () => {
               </div>
               
               <div className="space-y-4">
-                {[
-                  {
-                    date: "Today",
-                    name: "Full Body Power",
-                    duration: "45 min",
-                    calories: "320",
-                    color: "blue"
-                  },
-                  {
-                    date: "Yesterday",
-                    name: "HIIT Cardio Blast",
-                    duration: "30 min",
-                    calories: "280",
-                    color: "red"
-                  },
-                  {
-                    date: "June 12",
-                    name: "Upper Body Focus",
-                    duration: "40 min",
-                    calories: "290",
-                    color: "purple"
-                  },
-                  {
-                    date: "June 10",
-                    name: "Core & Stretching",
-                    duration: "35 min",
-                    calories: "210",
-                    color: "green"
-                  },
-                  {
-                    date: "June 9",
-                    name: "Lower Body Strength",
-                    duration: "50 min",
-                    calories: "350",
-                    color: "orange"
-                  }
-                ].map((workout, index) => (
-                  <div key={index} className="flex items-center p-3 bg-secondary/50 rounded-lg">
-                    <div className={`p-2 bg-${workout.color}-500/10 rounded-full mr-3 flex-shrink-0`}>
-                      <Dumbbell className={`h-5 w-5 text-${workout.color}-500`} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <h4 className="font-medium">{workout.name}</h4>
-                        <span className="text-xs text-muted-foreground">{workout.date}</span>
+                {recentSessions.length > 0 ? (
+                  recentSessions.map((session, index) => {
+                    const sessionDate = new Date(session.date);
+                    const isToday = new Date().toDateString() === sessionDate.toDateString();
+                    const isYesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toDateString() === sessionDate.toDateString();
+                    const dateDisplay = isToday 
+                      ? "Today" 
+                      : isYesterday 
+                        ? "Yesterday" 
+                        : sessionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    
+                    return (
+                      <div key={session.id} className="flex items-center p-3 bg-secondary/50 rounded-lg">
+                        <div className="p-2 bg-blue-500/10 rounded-full mr-3 flex-shrink-0">
+                          <Dumbbell className="h-5 w-5 text-blue-500" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between">
+                            <h4 className="font-medium">{session.name}</h4>
+                            <span className="text-xs text-muted-foreground">{dateDisplay}</span>
+                          </div>
+                          <div className="flex text-sm text-muted-foreground gap-4 mt-1">
+                            <span className="flex items-center">
+                              <Clock className="h-3 w-3 mr-1" /> {Math.floor(session.duration / 60)} min
+                            </span>
+                            <span className="flex items-center">
+                              <Flame className="h-3 w-3 mr-1" /> {session.caloriesBurned} cal
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex text-sm text-muted-foreground gap-4 mt-1">
-                        <span className="flex items-center">
-                          <Clock className="h-3 w-3 mr-1" /> {workout.duration}
-                        </span>
-                        <span className="flex items-center">
-                          <Flame className="h-3 w-3 mr-1" /> {workout.calories} cal
-                        </span>
-                      </div>
-                    </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    No workout history yet. Complete a workout to see it here!
                   </div>
-                ))}
+                )}
               </div>
               
               <Button variant="ghost" className="w-full mt-4">

@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import PoseDetection from "@/components/workout/PoseDetection";
@@ -7,6 +9,7 @@ import BlurredCard from "@/components/ui/BlurredCard";
 import { Button } from "@/components/ui/button";
 import { Check, Clock, Dumbbell, User, Heart, HeartPulse, Volume2, List, MoreHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useWorkout } from "@/context/WorkoutContext";
 
 interface WorkoutMetrics {
   duration: number;
@@ -17,7 +20,10 @@ interface WorkoutMetrics {
 }
 
 const WorkoutSession = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { addSession } = useWorkout();
+  
   const [metrics, setMetrics] = useState<WorkoutMetrics>({
     duration: 0,
     caloriesBurned: 0,
@@ -29,6 +35,7 @@ const WorkoutSession = () => {
   const [isWorkoutActive, setIsWorkoutActive] = useState(true);
   const [currentSet, setCurrentSet] = useState(3);
   const [currentSetProgress, setCurrentSetProgress] = useState(45);
+  const [workoutName, setWorkoutName] = useState("Full Body Power");
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -81,10 +88,25 @@ const WorkoutSession = () => {
 
   const handleEndWorkout = () => {
     setIsWorkoutActive(false);
+    
+    // Save the workout session to our context
+    addSession({
+      name: workoutName,
+      duration: metrics.duration,
+      caloriesBurned: metrics.caloriesBurned,
+      exercisesCompleted: metrics.exercisesCompleted,
+      heartRateAvg: metrics.heartRate
+    });
+    
     toast({
       title: "Workout completed!",
       description: `You burned ${metrics.caloriesBurned} calories in ${formatDuration(metrics.duration)}.`,
     });
+    
+    // Navigate to progress page to see results
+    setTimeout(() => {
+      navigate("/progress");
+    }, 2000);
   };
 
   const handleCompleteExercise = () => {

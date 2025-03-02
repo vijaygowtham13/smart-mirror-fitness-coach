@@ -1,37 +1,21 @@
-
 import React, { useState } from "react";
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line } from "recharts";
 import { Calendar, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BlurredCard from "@/components/ui/BlurredCard";
-
-// Sample data
-const data = [
-  { day: "Mon", workout: 32, calories: 1200, duration: 25 },
-  { day: "Tue", workout: 42, calories: 1800, duration: 35 },
-  { day: "Wed", workout: 51, calories: 2200, duration: 45 },
-  { day: "Thu", workout: 49, calories: 2100, duration: 42 },
-  { day: "Fri", workout: 63, calories: 2500, duration: 55 },
-  { day: "Sat", workout: 72, calories: 2800, duration: 65 },
-  { day: "Sun", workout: 58, calories: 2300, duration: 50 },
-];
+import { useWorkout } from "@/context/WorkoutContext";
 
 type ChartType = "activity" | "calories" | "duration";
 
-const getWeekData = (week: string) => {
-  // In a real app, this would fetch different data for different weeks
-  // For now, we'll just return the same data
-  return data;
-};
-
 const ProgressChart = () => {
+  const { getWeeklyData } = useWorkout();
   const [chartType, setChartType] = useState<ChartType>("activity");
   const [currentWeek, setCurrentWeek] = useState("This Week");
-  const [currentData, setCurrentData] = useState(data);
+  
+  const currentData = getWeeklyData();
 
   const handleWeekChange = (week: string) => {
     setCurrentWeek(week);
-    setCurrentData(getWeekData(week));
   };
 
   const renderChart = () => {
@@ -185,15 +169,26 @@ const ProgressChart = () => {
       <div className="grid grid-cols-3 gap-4 mt-6">
         <div className="text-center p-4 bg-secondary/50 rounded-lg">
           <p className="text-sm text-muted-foreground">Avg. Score</p>
-          <p className="text-2xl font-semibold text-primary">52</p>
+          <p className="text-2xl font-semibold text-primary">
+            {Math.round(currentData.reduce((sum, day) => sum + day.workout, 0) / currentData.length) || 0}
+          </p>
         </div>
         <div className="text-center p-4 bg-secondary/50 rounded-lg">
           <p className="text-sm text-muted-foreground">Total Calories</p>
-          <p className="text-2xl font-semibold text-purple-500">14,900</p>
+          <p className="text-2xl font-semibold text-purple-500">
+            {currentData.reduce((sum, day) => sum + day.calories, 0).toLocaleString()}
+          </p>
         </div>
         <div className="text-center p-4 bg-secondary/50 rounded-lg">
           <p className="text-sm text-muted-foreground">Workout Time</p>
-          <p className="text-2xl font-semibold text-green-500">5h 17m</p>
+          <p className="text-2xl font-semibold text-green-500">
+            {(() => {
+              const totalMinutes = currentData.reduce((sum, day) => sum + day.duration, 0);
+              const hours = Math.floor(totalMinutes / 60);
+              const minutes = totalMinutes % 60;
+              return `${hours}h ${minutes}m`;
+            })()}
+          </p>
         </div>
       </div>
     </BlurredCard>
